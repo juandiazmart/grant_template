@@ -1,23 +1,48 @@
 ---
 bibliography: references.bib
-csl: styles.ref/genomebiology.csl
+csl: styles.ref/nature.csl
 output:
-  word_document:
+  bookdown::word_document2:
     reference_docx: styles.doc/NIH_grant_style.docx
-  html_document: default
 ---
 
-# Title
+# Anexo 2
 
-# Specific Aims
+## Presentación de la propuesta.
 
-**Aim 1: **
+**Datos del responsable Técnico : ** Dra. Ruth Selene Fuentes García. Profesor Titular “A”. Facultad de ciencias, UNAM.
+
+**Título: ** Estimación del impacto de las medidas de mitigación por COVID-19 en las 32 entidades federativas de México utilizando un modelo jerárquico Bayesiano.
 
 **Aim 2: **
 
 **Aim 3: **
 
-# Research Strategy
+## Descripción del proyecto.
+
+### Introducción y antecedentes
+
+Los [coronavirus](https://coronavirus.gob.mx/informacion-accesible/) son una familia de virus que suelen causar enfermedades en animales, aunque algunos pueden afectar también a humanos. En las personas pueden producir infecciones respiratorias que pueden ir desde un resfriado común hasta enfermedades más graves. En el 80% de los casos, la infección por este nuevo coronavirus, denominado oficialmente SARS-Cov-2, produce síntomas respiratorios de carácter leve. Con el nombre de COVID-19 se denomina la enfermedad respiratoria producida por este virus. Hasta el día de hoy (`r format(max(data_covid$date), "%b %e")`) se han confirmado en nuestro país `r formatC(confirmados, format="f", big.mark=",", digits=0)` casos y `r formatC(muertes, format="f", big.mark=",", digits=0)`muertes. Mucho se ha hablado de la importancia de las medidas de mitigación para tratar de frenar la epidemia y así evitar la saturación de los hositales, especialmente aquellos de tercer nivel.
+
+El sistema de vigilincia
+El Dr. Hugo López Gatell ha mencionado en reiteradas ocasiones como funciona el sistema centinela en nuestro país (la siguiente [entrevista](https://elpais.com/sociedad/2020-03-26/lopez-gatell-en-mexico-queremos-un-balance-entre-proteger-la-salud-y-a-las-economias-mas-debilitadas.html) es muestra de lo anterior). A manera de resumen, la idea del programa es que “en vez de recopilar grandes cantidades de datos de calidad deficiente, hay que concentrarse en recopilar datos de buena calidad de un número reducido de centros centinela seleccionados cuidadosamente”, de acuerdo al documento de la [OMS](https://www.paho.org/revelac-i/wp-content/uploads/2015/10/2015-cha-guia-operativa-vigilancia-centinela-irag.pdf) actualizado en 2014. El proceso es buscar COVID-19 en pacientes negativos a la prueba de influenza para ver si hay transmisión comunitaria; Alberto Díaz Cayeros hace una descripción de éste y discute posibles fallas que pueden ocurrir al utilizar este [sistema](https://medium.com/@adiazcayeros/the-balancing-act-in-mexicos-covid-19-response-a6955ec629fc).
+
+El 28 de febrero fue confirmado el primer paciente con COVID-19 en nuestro país. Desde el 23 de marzo se han [modificado](https://lopezdoriga.com/nacional/modifica-salud-criterios-para-identificacion-de-casos-sospechosos-por-covid-19/) los criterios operacionales para la vigilancia epidemiológica de COVID-19. Como se ha mencionado en diferentes medio de comunicación (nota [aquí](https://www.elfinanciero.com.mx/nacional/al-10-de-los-casos-sospechosos-de-covid-19-con-sintomas-leves-se-les-aplica-prueba-imss)) la definición es la siguiente:
+
+* Caso sospechoso - Persona de cualquier edad que en los últimos siete días haya presentado al menos dos síntomas de tos, fiebre o cefalea, es decir, dolor de cabeza intenso y persistente y que esté acompañado de los siguientes signos: dificultad para respirar, hinchazón en articulaciones con dificultad de movimiento, dolor muscular, ardor de garganta, rinorrea, conjuntivitis y dolor de tórax.
+
+* Caso confirmado - Persona que cumpla lo anterior y que cuente con confirmación del InDRE.
+
+Asimismo, se modificó el porcentaje de muestreo para vigilar los casos de COVID-19. Solo se realizará la prueba al 10% de los casos sospechosos sin síntomas o síntomas leves. A su vez, se realizará la prueba al 100% de los casos sospechosos con sintomatología grave o que cumplan con la definición infección respiratoria aguda grave (IRAG).
+
+Se estima que aproximadamente un 5% de los casos confirmados por cOVID-19 requerirán de cuidados intensivos [@murthy2020care]. Lo anterior ha mostrado que ciertos países en el mundo experimentaran un rápido incremento en la utilización de recursos sanitarios, sobre todo aquellos países con una proporción importante de adultos mayores de 65 años [@remuzzi2020covid]. Si bien es cierto que en nuestro país solamente el 7.25% de la población pertenece a este grupo de edad (OCDE), la evidencia en otros países ha revelado que la obesidad y sus comorbilidades asociadas son un factor de riesgo importante para aquellas personas menores de 60 años [@lighter2020obesity]. Lighter et al. encontraron que [-@lighter2020obesity] aquellos pacientes menores a 60 años con índice de masa corporal (IMC) de entre 30 y 34 que ingresaron a urgencias por COVID-19 tuvieron 1.8 más posibilidades de ingresar a terapia intensiva en comparación con aquellos pacientes sin obesidad (IMC<30); estas posibilidades aumentaron a 3.6 en aquellos pacientes con un IMC mayor o igual a 35.
+
+De acuerdo a la más reciente Encuesta Nacional de Nutrición (ENSANUT 2018) realizada conjuntamente entre el Instituto Nacional de Salud Pública (INSP) y el Instituto Nacional de Estadística y Geografía (INEGI), aproximadamente 15.2 millones de mexicanos tienen diagnóstico previo de hipertensión mientras que el 75.2% de la población mayor a 2 años tiene obesidad y sobrepeso (referencia). Asimsimo la Secretaria de Salud ha reportado en sus informes técnicos diarios que los 3 principales grupos en riesgo de presentar complicaciones por COVID-19 son: personas mayores a 65 años, personas con Diabetes Mellitus (diagnosticada y no diagnosticada) y personas con hipertensión arterial (referencia).
+
+
+
+
+
 
 # Significance
 
@@ -38,3 +63,9 @@ output:
 # Timeline
 
 # References
+
+---
+output:
+  bookdown::gitbook:
+    highlight: tango
+---
