@@ -10,6 +10,10 @@ output:
 knitr::opts_chunk$set(echo = FALSE,
                       tidy.opts=list(width.cutoff=60),
                       tidy=TRUE)
+percent <- function(x, digits = 2, format = "f", ...) {
+  paste0(formatC(100 * x, format = format, digits = digits, ...), "%")
+}
+library(tidyverse)
 load("grant.R")
 ```
 
@@ -57,36 +61,229 @@ Lo anterior se ha visto reflejado en las muertes de pacientes confirmados con CO
 Muchos de los modelos epidemiológicos se basan en la incidencia de **casos confirmados** para poder hacer estimaciones y/o proyecciones de diferentes desenlaces en salud, ya sea mortalidad, hospitalizaciones, intubaciones, etc. Una de las grandes limitaciones es el tiempo que pasa entre el momento de la infección y el momento que la prueba resulta positiva. Esto se debe a que entre estos dos momentos hay un periodo de incubación (mediana 6 días [@lauer2020incubation]) y un periodo entre que se toma la prueba y se entrega el resultado de ésta (mediana 9 días [@gob]). Una consecuencia de esto es que los casos confirmados que se presentan día a día son en realidad los casos que se infectaron hace 2 semanas o más.
 Adicionalmente, el sistema de vigilancia centinela no realiza pruebas a aquellos que no cumplen la definición operacional, implicando que este sistema no logra capturar a todas las personas asintomáticas. Esto pudiera generar diferentes brotes ya que existe evidencia científica relacionada a la transmisión del virus por parte de los que no presentan ningun tipo de síntoma [@Bai]. Debido a estas limitaciones, diferentes investigadores en enfermedades infecciosas han utilizado las muertes observadas como la variable principal para hacer inferencia en diferentes modelos epidemiológicos ([@flaxman2020report]). 
 
-Por lo tanto, proponemos estimar el impacto que han tenido las medidas de mitigación en el número diario de infecciones por SARS-Cov-2, en el número de pacientes que requriran terapia intensiva y finalmente en el número de muertes, utilizando las **muertes diarias** como la variable observable en nuestro análisis Utilzaremos un modelo jerárquico Bayesiano semi-mecanístico^[Es semi-mecanístico ya que utiliza la estructura de los modelos compartimentales pero sin la necesidad de especificar el sistema de ecuaciones diferenciales] [@staff2019correction] debido a que las muertes observadas diarias dependen de las hopitalizaciones en terapia intensiva, éstas a su vez dependerán del número de infecciones por SARS-Cov2 que está incluenciado por el número efectivo de reproducción. Una ventaja de este tipo de modelos semi-mecanísticos es que los parámetros a estimar están influenciados por la variable observable y por lo tanto ésta representa un peso importante la momento de realizar la inferencia.
+Por lo tanto, proponemos estimar el impacto que han tenido las medidas de mitigación en el número diario de infecciones por SARS-Cov-2, en el número de pacientes que requriran terapia intensiva y finalmente en el número de muertes, utilizando las **muertes diarias** como la variable observable para entrenar nuestro modelo. Utilizaremos un modelo jerárquico Bayesiano semi-mecanístico^[Es semi-mecanístico ya que utiliza la estructura de los modelos compartimentales pero sin la necesidad de especificar el sistema de ecuaciones diferenciales] [@staff2019correction] debido a que las muertes observadas diarias dependen de las hopitalizaciones en terapia intensiva, éstas a su vez dependerán del número de infecciones por SARS-Cov2 que está incluenciado por el número efectivo de reproducción. Una ventaja de este tipo de modelos semi-mecanísticos es que los parámetros a estimar están influenciados por la variable observable y por lo tanto ésta representa un peso importante la momento de realizar la inferencia.
 
 Nuestro modelo es una adaptación de un modelo epidemiológico europeo que midió el mismo desenlace en 14 países diferentes [-@flaxman2020report]; nuestra propuesta se basa en modficar algunos parámetros y adaptarlo para que la inferencia y proyecciones resulten en dos productos finales:
 
 1. Producto a nivel estatal.
-2. Producto a nivel zona metropolitana del Valle de México.
+2. Producto a nivel Zona Metropolitana del Valle de México (ZMVM).
 
 ## Justificación
 
-Gracias a que contamos con información respecto a lo que ha ocurrido en otros países, le evidencia ha mostrado [] que si se logra reducir $R_t$ esto se traducirá en menos infecciones y por lo tanto en menos muertes. La misma evidencia también ha mostrado que diferentes medidas masivas de mitigación resultan en una reducción de este número. Nuestro modelo utilizará información sobre estas medidas masivas implementadas en los estados de la república mexicana para estimar que impacto tienen estas medidas en $R_t$ (y en consecuencia el impacto que tienen en los otros parámetros del modelo).
+Gracias a que contamos con información respecto a lo que ha ocurrido en otros países, le evidencia ha mostrado [@flaxman2020report;@ferguson2020report] que si se logra reducir $R_t$ esto se traducirá en menos infecciones y por lo tanto en menos muertes. Asimismo se observó diferentes medidas masivas de mitigación resultan en una reducción de este número. Nuestro modelo utilizará información sobre estas medidas masivas implementadas en los estados de la república mexicana para estimar que impacto tienen estas medidas en $R_t$ (y en consecuencia el impacto que tienen en los otros parámetros del modelo).
 
-El modelo tendrá como resultado final 
+El modelo producirá los siguientes desenlaces en salud con sus respectivos niveles de incertidumbre, a nivel estatal y nivel municipios y alcaldias de la ZMVM:
+
+1. Número efectivo de reproducción $R_t$.
+2. Número de infectados ($c_t$) al tiempo $t$. Esta estimación será la estimación total de personas infectadas por SARS-Cov-2, es decir, sintomáticas y asintomáticas.
+3. Número de pacientes que requerien cuidados intensivos ($h_t$) al tiempo $t$.
+4. Número de esperado muertes ($d_t$) al tiempo $t$.
+
+Con estas estimaciones será posible proyectar cualquiera de los desenlaces antes mencionados en el futuro. Nuestra idea es que el usuario, ya sea cualquier persona o tomador de decisión, pueda accesar a nuestro modelo de manera remota y generar diferentes estadísticas, gráficas o mapas interactivos, utilizando las bases precargadas en el modelo o utilizando los mismos datos proporcionados por el usuario.
 
 
-# Significance
+## Objetivo general
 
-# Innovation
+**Estimar el impacto que tienen las diferentes medidas de mitigación en el número de reproducción, número de hospitalizaciones y número de muertes a través del tiempo. Nuestro objetivos específicos son:
 
-# Approach 
+1. Actualizar los parámetros en nuestro modelo mediante una revisión rápida de la literatura.
+2. Entrenar nuestro modelo utilizando las muertes diarias reportadas a nivel estatal y a nivel zMVM. Esto implicará validar nuestro modelo utilizando diferentes técnicas estadísticas para controlar un posible "sobreajuste" del modelo.
+3. Crear una plataforma en línea en la cual el usuario pueda ver los resultados en tiempo real para ambos niveles de análisis. Asimismo crear una aplicación en la misma plataforma donde el usuario pueda reproducir el modelo utilizando los datos pre-cargados o los propios.
 
-## Overall strategy
+## Acercamiento teórico y conceptual
 
-## Aim 1: 
+Como ya se mencionó en la introducción, el modelo utilizará las muertes observadas de acuerdo a los datos oficiales del gobierno de México, los cuales se encuentran en el portal "Datos abiertos" y son actualizados de manera diaria. La Figura \@ref(fig:modelo) muestra el nivel jerárquico (de abajo hacia arriba) que nos permite relacionar el impacto de diferentes medidas de mitigación (i.e. cierre de escuelas,etc.) y las muertes observadas. Dada la relación que existe entre los diferentes parámetros a estimar, el modelo realizara la inferencia utilizando un enfoque Bayesiano. La relación entre los parámetros se explica a grandes rasgos a continuación utilizando la misma notación que el modelo original [-@flaxman2020report].
 
-### Limitations and alternatives
+```{r modelo, echo=FALSE, fig.cap="Representación del modelo utilizando grafos causales acíclicos. Se puede observar la relación entre los diferentes parámetros en el modelo.",fig.align="center"}
+knitr::include_graphics("dag_COVID.png")
+```
 
-## Aim 2: 
+### Muertes observadas
 
-## Aim 3: 
+Día con día el gobierno federal nos informa de el número de muertes observadas $D_t$ para los días $t\in1,...,n$. Estas muertes diarias son modeladas utilizando el valor esperado de las muertes diarias, es decir, $d_t=\mathbf{E}[D_t]$. El modelo asume que $D_t$ tiene una distribución binomial negativa^[Asumo que utilizaron esta distribución para permitir la posible sobre dispersión.] con los siguientes parámetros:
 
-# Timeline
+$$D_t\sim binomial neg\left(d_t,d_t+\frac{d_t^2}{\phi}\right)$$
+$$\phi \sim N^+(0,5)$$
 
-# References
+donde $\phi$ tiene una distribución normal truncada. El número esperado de muertes $d$ en un determinado día es una función del número de infecciones $c$ que ocurrieron en días previos. Para poder unir las muertes con los casos infectados, se utilizó la tasa de mortalidad por infección ($ifr$, infection mortality rate en inglés) que toma en cuenta tanto a los detectados como los no detectados^[recordemos que la tasa de letalidad solo contempla a los detectados mientras la tasa de mortalidad por infección contempla a todas las personas infectadas] y el tiempo que pasa entre la infección y la muerte, la cual denotamos con $\pi$. Si bien no hay un dato para México hasta el momento para $ifr$, se utilizó la tasa de mortalidad por infección reportado en el mismo estudio. Este valor correspondió a 0.9%.
+
+El modelo asume (basado en [evidencia](https://www.thelancet.com/journals/laninf/article/PIIS1473-3099(20)30243-7/fulltext) previa) que $\pi$ es una suma de dos tiempos independientes: el tiempo de incubación(tiempo entre infección y síntomas) y el tiempo entre síntomas y muerte. Claramente estos tiempos son aleatorios y por lo tanto se les asigna una distribución de probabilidad (Gamma^[Parametrizada con la media de la distribución y su coeficiente de variación]). Por lo tanto $\pi$ está dado por:
+
+$$\pi\sim ifr*((Gamma(5.1,0.86)+Gamma(18.8,0.45))$$
+
+Ahora que ya sabemos que $\pi$ representa la distribución entre el tiempo de infección y muerte ajustada por la tasa de mortalidad por infección, se puede relacionar el número esperado de muertes en un determinado día $d_t$ con $pi$ de la siguiente manera:
+
+$$d_t=\sum_{\tau=0}^{t-1} c_\tau\pi_{t-\tau}$$
+
+
+
+
+donde $c_\tau$ es el número de nuevas infecciones en el día $\tau$ y donde $\pi$ es discretizado. La ecuación anterior nos dice que el número de muertes esperadas al día $t$ puede ser expresado como la ponderación entre el número de infecciones en días pasados y la probabilidad de morir.
+
+### Hospitalizaciones en el modelo
+
+$$d_{t,m}=\sum_{\tau=0}^{t-1} h_{\tau,m}\zeta_{t-\tau,m}*exp(\alpha_{m}+\beta X_{m})$$
+
+donde $\zeta$ representa el tiempo entre hospitalización en terapia intensiva y muerte, $X_{m}$ representa la proporción de pacientes con diabetes en la región $m$. Asimismo
+
+$$
+\begin{equation}
+\begin{aligned}
+ \zeta_{m}\sim hrm_m*gamma(3,) \\
+ \alpha_{m}\sim Normal(0,10) \\
+ \beta\sim Normal(0,10)
+\end{aligned}
+\end{equation}
+$$
+
+Finalmente
+
+$$h_{t,m}=\mu\sum_{\tau=0}^{t-1} c_{\tau,m}\nu_{t-\tau,m}$$
+
+donde 
+
+$$\mu \sim Beta(,)$$
+
+### Infecciones en el modelo
+
+
+
+Hasta ahora he resumido la relación que puede existir entre el número de muertes y el número de infecciones al día $t$. Para modelar el número de infecciones en el tiempo es necesario especificar el tiempo que pasa entre el inicio de síntomas de una persona y el inicio de síntomas de otra persona infectada por la primera (en inglés se conoce como **serial interval**). De acuerdo a la literatura el promedio de este tiempo ronda entre los 4 días y 8 días, por lo que el modelo asume que éste tiene una distribución gamma^[Misma parametrización] con los siguientes parámetros:
+
+$$ g \sim Gamma(6.5,0.62)$$
+El número de infecciones $c_t$ al día $t$ está dada por la siguiente [función](https://www.jstor.org/stable/1969779?seq=1):
+
+$$c_t=R_t\sum_{\tau=0}^{t-1} c_\tau g_{t-\tau}$$
+
+donde $g$ también es discretizada. Lo anterior implica que las infecciones al día de hoy dependen de las infecciones en días pasados, ponderadas por la distribución $g$. Esta ponderación es ajustada por el numero efectivo de reproducción
+^[Este es el número de casos, en promedio, que van a ser causados por una persona infectada durante el periodo de contagio] $R_t$. Éste número cambia con respecto al tiempo debido a que la implementación de diferentes medidas de mitigación en teoría hará que éste disminuya y por lo tanto haya menos contagios.
+
+La idea es empezar con un número de reproducción basal $R_0$^[Para los que vieron Contagio seguro recordarán que esta expresión es conocida como el número básico de reproducción (R-naught en inglés)] y que este se irá modificando en el tiempo debido a la implementación de diferentes intervenciones como Susana Distancia en nuestro país.
+
+El modelo utiliza las siguientes intervenciones:
+
+1. Aislamiento voluntaria al ser detectado con SARS-COV2 - Se asume que esta medida fue implementada unos días después del primer caso confirmado con COVID-19 (28 de febrero). Decidimos utilizar el 3 de marzo como el tiempo en que se implementa la medida para dar tiempo a que ésta medida fuera difundida en todo el país cuando se presentaron los primeros casos.
+
+2. Cancelación de eventos públicos - Se asume como el día (Marzo 17) en que el gobierno de la CDMX decidió cancelar todos los eventos públicos en la [ciudad](https://www.eluniversal.com.mx/metropoli/cdmx/coronavirus-gobierno-de-cdmx-suspende-eventos-masivos-por-covid-19).
+
+3. Cierre de escuelas - Se asume como el día (Marzo 21) en que la UNAM suspendió clases [clases](https://heraldodemexico.com.mx/pais/unam-suspende-clases-por-coronavirus-covid-19/). 
+
+4. Exhortación al distanciamiento social - Inicio de Susana [Distancia](https://www.unotv.com/noticias/portal/nacional/detalle/coronavirus-en-mexico-anuncian-jornada-nacional-de-sana-distancia-491479/) (Marzo 23).
+
+Para facilitar la estimación de $R_t$, se utiliza una función por partes que modifique $R_t$a partir de un valor inicial $R_0$ y ademas que el efecto de cada intervención  es multiplicativa. Por lo tanto el número efectivo de reproducción $R_t$  es una función de la implementación de cada intervención al día $t$:
+
+$$R_t=R_0exp(-\sum_{k=1}^{4}\alpha_{k}I_{k,t})$$
+
+donde I es una variable indicadora donde toma el valor de 1 si la intervención $k$ es implementada $k=1,...,4$ y 0 si no. Asimismo:
+
+$$\alpha_{k}\sim Gamma(.5,1)$$
+
+$$R_{t,m}=R_{0,m}exp(\alpha_{m}+\beta F_{t,m})$$
+
+donde $F_{t,m}$ es la variable que mide la reducción del flujo peatonal al tiempo $t$ en la región $m$. Asimismo
+
+
+$$
+\begin{aligned}
+ \alpha_{m}\sim Normal(0,10) \\
+ \beta\sim Normal(0,10)
+\end{aligned}
+$$
+
+
+La distribución de $R_0$ fue asumida con base en la evidencia [previa](https://www.ncbi.nlm.nih.gov/pubmed/32097725):
+
+$$R_0\sim Normal(2.4,|\kappa|),\kappa\sim Normal(0,0.5)$$
+
+Finalmente el modelo asume que las nuevas infecciones ocurren 30 días antes de que el país haya acumulado 10 muertes observadas.
+
+### Resultados preliminares
+
+El modelo estima que para `r format(max(data_covid$date), "%b %e")`, el número acumulado de infectados por SARS-COV2 en nuestro país es de `r formatC(tail(data_country[,"predicted_cases_c"],1), format="f", big.mark=",", digits=0)` (95% CrI: `r paste(formatC(tail(data_country[,"predicted_min_c"],1), format="f", big.mark=",", digits=0),"-",formatC(tail(data_country[,"predicted_max_c"],1), format="f", big.mark=",", digits=0))`) (ver Figura \@ref(fig:infect)). Lo anterior representa al `r percent(tail(data_country[,"predicted_cases_c"],1)/pop)` (95% CrI: `r paste(percent(tail(data_country[,"predicted_min_c"],1)/pop),"-",percent(tail(data_country[,"predicted_max_c"],1)/pop))`) de la población total en nuestro país, utilizando los datos de CONAPO para 2020 (127 millones de mexicanos aproximadamente).
+
+Al inicio de la epidemia en México, el número efectivo de reproducción $R_t$  (ver Figura \@ref(fig:infect)) era de `r formatC(head(data_country[,"rt"],1), format="f", big.mark=",", digits=1)` (95% CrI: `r paste(formatC(head(data_country[,"rt_min"],1), format="f", big.mark=",", digits=1),"-",formatC(head(data_country[,"rt_max"],1), format="f", big.mark=",", digits=1))`). Después de que el gobierno implementó "Susana Distancia" el 23 de Marzo, éste descendió a `r formatC(tail(data_country[,"rt"],1), format="f", big.mark=",", digits=1)` (95% CrI: `r paste(formatC(tail(data_country[,"rt_min"],1), format="f", big.mark=",", digits=1),"-",formatC(tail(data_country[,"rt_max"],1), format="f", big.mark=",", digits=1))`).
+
+```{r infect,message=FALSE, warning=FALSE, tidy=TRUE,fig.width=7, fig.height=5.5,fig.cap="Número acumulado de confirmados por COVID-19, observados y predichos. La región azul representa la incertidumbre de nuesta estimación (línea negra)"}
+p4+labs(caption = "Juan Pablo Díaz @juandiazmart / Data: https://github.com/mariorz.",
+        subtitle = paste("Datos hasta", format(max(data_covid$date), "%b %e, %Y"),"México"))+ 
+   theme(plot.title = element_text(size = rel(2), face = "bold"),
+         plot.subtitle = element_text(size = rel(1.5)),
+         axis.text.y = element_text(size = rel(2)),
+         axis.title.x = element_text(size = rel(1.5)),
+         axis.title.y = element_text(size = rel(1.5)),
+         axis.text.x = element_text(size = rel(2)),
+         legend.text = element_text(size = rel(1)),
+         panel.grid.major = element_line(colour = "grey90", size = .1),
+         panel.background = element_blank(),
+         axis.line = element_line(colour = "grey50", size = .9))
+```
+
+
+```{r repro,message=FALSE, warning=FALSE, tidy=TRUE,fig.width=7, fig.height=5.5,fig.cap=paste("Efecto de las intervenciones en","~ R[t]")}
+p3+labs(caption = "Juan Pablo Díaz @juandiazmart / Data: https://github.com/mariorz.",
+        subtitle = paste("Datos hasta", format(max(data_covid$date), "%b %e, %Y"))) + 
+   theme(plot.title = element_text(size = rel(2), face = "bold"),
+         plot.subtitle = element_text(size = rel(1.5)),
+         axis.text.y = element_text(size = rel(2)),
+         axis.title.x = element_text(size = rel(1.5)),
+         axis.title.y = element_text(size = rel(1.5)),
+         axis.text.x = element_text(size = rel(2)),
+         legend.text = element_text(size = rel(1)),
+         panel.grid.major = element_line(colour = "grey90", size = .1),
+         panel.background = element_blank(),
+         axis.line = element_line(colour = "grey50", size = .9))
+```
+
+Una de las ventajas de este modelo es que nos permite hacer predicciones del número acumulado de muertes, utilizando $R_t$ estimado en `r format(max(data_covid$date), "%b %e")` y su contrafactual^[Lo que pudo haber ocurrido] ($R_t$ al inicio de la epidemia en nuestro país); estas predicciones se muestran en la Figura \@ref(fig:muerte). Con estos resultados es posible estimar cuantas muertes se han evitado hasta el día de hoy, lo anterior se obtiene al calcular la diferencia entre ambas predicciones (región azul menos región roja de la Figura \@ref(fig:muerte) en `r format(max(data_covid$date), "%b %e")`). Gracias a las medidas de mitigación se han podido evitar 
+ `r formatC(muertes_evitadas[1], format="f", big.mark=",", digits=0)` (95% CrI: `r paste(formatC(muertes_evitadas[2], format="f", big.mark=",", digits=0),"-",formatC(muertes_evitadas[3], format="f", big.mark=",", digits=0))`) muertes.
+
+```{r muerte,message=FALSE, warning=FALSE, tidy=TRUE,fig.width=7, fig.height=5.5,fig.cap= "Número acumulado de muertes por COVID-19, observados y predichos"}
+p2+labs(caption = "Juan Pablo Díaz @juandiazmart / Data: https://github.com/mariorz.",
+        subtitle = paste("Datos hasta", format(max(data_covid$date), "%b %e, %Y"))) + 
+   theme(plot.title = element_text(size = rel(2), face = "bold"),
+         plot.subtitle = element_text(size = rel(1.5)),
+         axis.text.y = element_text(size = rel(2)),
+         axis.title.x = element_text(size = rel(1.5)),
+         axis.title.y = element_text(size = rel(1.5)),
+         axis.text.x = element_text(size = rel(2)),
+         legend.text = element_text(size = rel(1)),
+         panel.grid.major = element_line(colour = "grey90", size = .1),
+         panel.background = element_blank(),
+         axis.line = element_line(colour = "grey50", size = .9))
+```
+
+## Grupo de trabajo
+
+El equipo de trabajo está conformado por investigadores con conocimientos solidos en Estadística Bayesiana, Bioestadística, Modelación de Enfermedades Infecciosas y/o Políticas Públicas en Salud para la toma de decisiones. El equipo y su relación con el proyecto se describe a continuación:
+
+Dra. Ruth Selene Fuentes García. Profesor Titular  “A”, Facultad de Ciencias, UNAM. - Estudió el doctorado en Estadística en la Universidad de Bath, Reino Unido. Cuenta con 14 años de experiencia en la docencia, de los cuales 8 han sido como profesora de tiempo completo. La Dra. Ruth cuenta con varias publicaciones en revistas indexadas tanto nacionales como internacionales . También ha sido sinodal en más de 50 exámenes profesionales y de posgrado. Sus principales áreas de interés son: análisis de datos multivariados, clasificación no supervisada, modelos de mezclas y Estadística Bayesiana. La Dra. Ruth se encargará de supervisar el proyecto, participando conjuntamente en la modficación del grafo causal acíclico, en la elaboración del código para estimar el modelo y finalmente de la coordinación entre el equipo de trabajo y diferentes actores que sean necesarios para la ejecución del proyecto.
+
+Dr. Osvaldo Espin-García. Bioestadístico Senior, UHN. Toronto, Canadá. - Doctor en Bioestadística por la Universidad de Toronto. El Dr. Osvaldo provee consultoría y apoyo estadístico a investigadores clínicos y de ciencia básica en diversos estudios principalmente relacionados con cáncer, donde ha colaborado como Bioestadístico en estudios observacionales y ensayos clínicos aleatorizados. Asimismo el Dr. Osvaldo ha sido acreedor de diferentes becas competitivas en Canadá que le ayudaron a consolidarse como investigador en Bioestadística con especialización en cáncer. Sus líneas de investigación son el diseño, desarrollo e implementación de nuevas metodologías en Bioestadística, Estadística genética y Epidemiologia genética enfocado a enfermedades complejas como diabetes, enfermedad de Crohn y cáncer, a través de colaboraciones inter- y/o multi- disciplinarias. Él se encargará de la modificación del grafo causal así como de la validación del modelo.
+
+Dr. Fernando Alarid Escudero. Profesor investigador, PPD, CIDE. - Doctor en Políticas de Salud con especialización en Ciencias de la Decisión por la Universidad de Minnesota. El Dr. Alarid-Escudero es profesor investigador en el Programa de Políticas de Drogas (PPD) en el Centro de Investigación y Docencia Económicas, AC (CIDE) Región Centro en Aguascalientes, México. Su investigación se centra en el desarrollo de modelos estadísticos y matemáticos para identificar estrategias óptimas de prevención, control y tratamiento de diferentes enfermedades, y en el desarrollo de métodos novedosos para cuantificar el valor de futuras investigaciones. Actualmente se encuentra desarrollando en colaboración con la universidad de Stanford un modelo compartimental epidemiológico para COVID-19 (https://www.sc-cosmo.org/). El Dr. Fernando se encargará de asesorar la construcción del modelo con el objetivo de tener un modelo que refleje el contexto mexicano.
+
+Dr(c). Juan Pablo Díaz Martínez. Investigador asociado, UHN. Toronto, Canadá. - Candidato a Doctor en Políticas de salud con especialización en modelos predictivos por la Universidad de Toronto. Juan Pablo cuenta con una posición de investigador asociado en el Hospital General de Toronto, donde brinda asesoramiento estadístico a diferentes epecialidades médicas en el hospital. Recientemente Juan Pablo participó en un grupo de investigación para predecir diferentes desenlaces en salud por COVID-19 para el ministerio de Salud de la Provincia de Ontario (https://www.covid-19-mc.ca/). Sus tesis doctoral se basa en el uso de modelos predictivos en cáncer de prostata para determinar la progresión de la enfermedad y su efecto en la calidad de vida del paciente. Juan Pablo se encargará de programar el algoritmo para entrenar los datos.
+
+La infraestructura será aportada por la Facultad de Ciencias de la UNAM. Ésta cuenta con un equipo amplio dedicado a la administración de recursos obtenidos por convocatorias nacionales e internacionales. Debido a la situación actual en México y el mundo, todo el trabajo se realizará de manera remota por lo que no será necesario utilizar las instalaciones de la Facultad.
+
+## Productos esperados
+
+La Figura \@ref(fig:crono) muestra la información referente a los productos esperados:
+
+```{r crono, echo=FALSE, fig.cap="Cronograma de actividades desglosado por objetivo específico.",fig.align="center"}
+knitr::include_graphics("crono.png")
+```
+
+## Beneficios, resultados y usuarios finales
+
+El beneficio principal será tener un modelo que mida el efecto de las medidas de mitigación en diferentes desenlaces relacionados con la enfermedad. Todo el código será replicable, repdroducible y abierto bajo la licencia MIT (https://opensource.org/licenses/MIT).
+
+Desde investigadores hasta tomadores de decisiones, la plataforma brindará estadísticas en tiempo real para los niveles previamente descritos con el fin de que los usuarios tengan información en tiempo real. La metodología del modelo será descrita en su totalidad, con el fin de poder recibir retroalimentación de otros grupos de trabajo. La plataforma se irá actualizando conforme al avance de los objetivos específicos 1 y 2.
+
+Finalmente, el abordaje Bayesiano nos permitirá utilizar lo ya estimado en futuros modelos epidemiológicos. Asimismo es sencillo ampliar el grafo causal si el usuario está interesado en incluir nuevos parámetros.
+
+## Financiamiento solicitado
+
+
+
+## Bibliografía
